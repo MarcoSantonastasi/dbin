@@ -59,12 +59,12 @@ export default async function main(options: Options): Promise<string> {
     (target) => target.os === os && (!target.arch || target.arch === arch),
   );
 
-  const dlPattern = options.pattern;
+  let dlPattern = options.pattern;
   const dlPatternHasTarget = dlPattern.includes("{target}");
   const dlPatternHasVersion = dlPattern.includes("{version}");
 
   if (dlPatternHasTarget && target) {
-    dlPattern.replaceAll("{target}", "<<<<target.name>>>>");
+    dlPattern = dlPattern.replaceAll("{target}", "<<<<target.name>>>>");
   } else if (dlPatternHasTarget && !target) {
     throw new Error(
       "When using {target} in the URL pattern you must also speicfy a valid target for your architecture and vice versa.",
@@ -72,7 +72,7 @@ export default async function main(options: Options): Promise<string> {
   }
 
   if (dlPatternHasVersion && options.version) {
-    dlPattern.replaceAll("{version}", options.version);
+    dlPattern = dlPattern.replaceAll("{version}", options.version);
   } else if (dlPatternHasVersion && !options.version) {
     throw new Error(
       "When using {version} in the URL pattern you must also speicfy a non empty version string and vice versa.",
@@ -81,12 +81,12 @@ export default async function main(options: Options): Promise<string> {
 
   const dlUrl = new URL(dlPattern);
 
-  const checksumPattern = options.checksumPattern;
+  let checksumPattern = options.checksumPattern;
   const checksumPatternHasTarget = checksumPattern?.includes("{target}");
   const checksumPatternHasVersion = checksumPattern?.includes("{version}");
 
   if (checksumPattern && checksumPatternHasTarget && target) {
-    checksumPattern.replaceAll("{target}", target.name);
+    checksumPattern = checksumPattern.replaceAll("{target}", target.name);
   } else if (checksumPatternHasTarget && !target) {
     throw new Error(
       "When using {target} in the checksum URL pattern you must also speicfy a valid target for your architecture and vice versa.",
@@ -94,7 +94,7 @@ export default async function main(options: Options): Promise<string> {
   }
 
   if (checksumPattern && checksumPatternHasVersion && options.version) {
-    checksumPattern.replaceAll("{version}", options.version);
+    checksumPattern = checksumPattern.replaceAll("{version}", options.version);
   } else if (checksumPatternHasVersion && !options.version) {
     throw new Error(
       "When using {version} in the checksum URL pattern you must also speicfy a non empty version string and vice versa.",
