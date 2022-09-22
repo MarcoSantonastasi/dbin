@@ -63,20 +63,17 @@ export default async function main(options: Options): Promise<string> {
   const dlPatternHasTarget = dlPattern.includes("{target}");
   const dlPatternHasVersion = dlPattern.includes("{version}");
 
-  if (dlPatternHasTarget && options.targets?.length != 0) {
-    if (!target) {
-      throw new Error(`No target found for your platform (${os} ${arch})`);
-    }
+  if (dlPatternHasTarget && target) {
     dlPattern.replaceAll("{target}", target.name);
   } else {
     throw new Error(
-      "When using {target} in the URL pattern you must also speicfy a non empty targets array and vice versa."
+      "When using {target} in the URL pattern you must also speicfy a valid target for your architecture and vice versa."
     );
   }
 
   if (dlPatternHasVersion && options.version) {
     dlPattern.replaceAll("{version}", options.version);
-  } else {
+  } else if (dlPatternHasVersion && !options.version) {
     throw new Error(
       "When using {version} in the URL pattern you must also speicfy a non empty version string and vice versa."
     );
@@ -88,28 +85,15 @@ export default async function main(options: Options): Promise<string> {
   const checksumPatternHasTarget = checksumPattern?.includes("{target}");
   const checksumPatternHasVersion = checksumPattern?.includes("{version}");
 
-  if (
-    checksumPattern &&
-    checksumPatternHasTarget &&
-    options.targets &&
-    options.targets.length != 0
-  ) {
-    if (!target) {
-      throw new Error(`No target found for your platform (${os} ${arch})`);
-    }
+  if (checksumPattern && checksumPatternHasTarget && target) {
     checksumPattern.replaceAll("{target}", target.name);
   } else {
     throw new Error(
-      "When using {target} in the checksum URL pattern you must also speicfy a non empty targets array and vice versa."
+      "When using {target} in the checksum URL pattern you must also speicfy a valid target for your architecture and vice versa."
     );
   }
 
-  if (
-    checksumPattern &&
-    checksumPatternHasVersion &&
-    options.version &&
-    options.version.length != 0
-  ) {
+  if (checksumPattern && checksumPatternHasVersion && options.version) {
     checksumPattern.replaceAll("{version}", options.version);
   } else {
     throw new Error(
@@ -121,14 +105,11 @@ export default async function main(options: Options): Promise<string> {
 
   const nameSegments = [options.name];
 
-  if (options.addNameOs && options.targets?.length != 0) {
-    if (!target) {
-      throw new Error(`No target found for your platform (${os} ${arch})`);
-    }
+  if (options.addNameOs && target) {
     nameSegments.push(target.os);
   } else {
     throw new Error(
-      "When adding a target architecture to the saved file name you must also speicfy a non empty targets array."
+      "When adding a target architecture to the saved file name you must also speicfy valid target for your architecture."
     );
   }
 
