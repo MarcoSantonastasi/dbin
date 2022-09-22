@@ -28,11 +28,6 @@ jobs:
           deno fmt --check
           deno lint
 
-      - name: Install & run pagefind
-        run: |
-          deno run -A demos/pagefind.ts
-          deno run -A demos/pagefind.ts
-
       - name: Install & run tailwind
         run: |
           deno run -A demos/tailwind.ts
