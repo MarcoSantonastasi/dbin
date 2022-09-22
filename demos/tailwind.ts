@@ -14,6 +14,8 @@ const binfile = await dbin({
   dir: "./_bin",
   name: "tailwind",
   overwrite: true,
+  addNameOs: true,
+  addNameVers: true,
 });
 
 const process = Deno.run({ cmd: [binfile, "-h"] });
