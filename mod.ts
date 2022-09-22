@@ -129,6 +129,7 @@ export default async function main(options: Options): Promise<string> {
 
   try {
     const fileResponse = await fetch(dlUrl);
+    console.log("<<<<< fileResponse >>>>>>", fileResponse);
     if (fileResponse.body) {
       await ensureDir(dirname(saveFullPath));
       try {
