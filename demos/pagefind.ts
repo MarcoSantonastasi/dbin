@@ -11,7 +11,8 @@ const binfile = await dbin({
     { name: "x86_64-apple-darwin", os: "darwin" },
     { name: "x86_64-pc-windows-msvc", os: "windows", arch: "x86_64" },
   ],
-  dest: "./_bin/pagefind",
+  dir: "./_bin",
+  name: "pagefind",
 });
 
 const process = Deno.run({ cmd: [binfile, "-h"] });
