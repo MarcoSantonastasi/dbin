@@ -65,7 +65,11 @@ export default async function main(options: Options): Promise<string> {
 
   if (dlPatternHasTarget && target) {
     dlPattern.replaceAll("{target}", target.name);
-    console.log("<<<< dlPattern >>>>> ", dlPattern);
+    console.log(
+      "<<<< dlPattern >>>>> ",
+      dlPatternHasTarget && target,
+      dlPattern,
+    );
   } else if (dlPatternHasTarget && !target) {
     throw new Error(
       "When using {target} in the URL pattern you must also speicfy a valid target for your architecture and vice versa.",
@@ -74,7 +78,11 @@ export default async function main(options: Options): Promise<string> {
 
   if (dlPatternHasVersion && options.version) {
     dlPattern.replaceAll("{version}", options.version);
-    console.log("<<<< dlPattern >>>>> ", dlPattern);
+    console.log(
+      "<<<< dlPattern >>>>> ",
+      dlPatternHasVersion && options.version,
+      dlPattern,
+    );
   } else if (dlPatternHasVersion && !options.version) {
     throw new Error(
       "When using {version} in the URL pattern you must also speicfy a non empty version string and vice versa.",
@@ -89,7 +97,11 @@ export default async function main(options: Options): Promise<string> {
 
   if (checksumPattern && checksumPatternHasTarget && target) {
     checksumPattern.replaceAll("{target}", target.name);
-    console.log("<<<< checksumPattern >>>>> ", checksumPattern);
+    console.log(
+      "<<<< checksumPattern >>>>> ",
+      checksumPattern && checksumPatternHasTarget && target,
+      checksumPattern,
+    );
   } else if (checksumPatternHasTarget && !target) {
     throw new Error(
       "When using {target} in the checksum URL pattern you must also speicfy a valid target for your architecture and vice versa.",
@@ -98,7 +110,11 @@ export default async function main(options: Options): Promise<string> {
 
   if (checksumPattern && checksumPatternHasVersion && options.version) {
     checksumPattern.replaceAll("{version}", options.version);
-    console.log("<<<< checksumPattern >>>>> ", checksumPattern);
+    console.log(
+      "<<<< checksumPattern >>>>> ",
+      checksumPattern && checksumPatternHasVersion && options.version,
+      checksumPattern,
+    );
   } else if (checksumPatternHasVersion && !options.version) {
     throw new Error(
       "When using {version} in the checksum URL pattern you must also speicfy a non empty version string and vice versa.",
@@ -129,8 +145,6 @@ export default async function main(options: Options): Promise<string> {
   if (os === "windows" && !saveName.endsWith(".exe")) saveName.concat(".exe");
   const saveFullPath: string = join(options.dir, saveName);
 
-  console.log("<<<<< dlUrl >>>>> ", dlUrl);
-  console.log("<<<<< saveFullPath >>>>> ", saveFullPath);
   let file: Deno.FsFile;
 
   try {
