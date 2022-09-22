@@ -13,6 +13,7 @@ const binfile = await dbin({
   ],
   dir: "./_bin",
   name: "pagefind",
+  overwrite: true,
 });
 
 const process = Deno.run({ cmd: [binfile, "-h"] });
