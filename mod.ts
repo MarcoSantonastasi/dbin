@@ -65,6 +65,7 @@ export default async function main(options: Options): Promise<string> {
 
   if (dlPatternHasTarget && target) {
     dlPattern.replaceAll("{target}", target.name);
+    console.log("<<<< dlPattern >>>>> ", dlPattern);
   } else if (dlPatternHasTarget && !target) {
     throw new Error(
       "When using {target} in the URL pattern you must also speicfy a valid target for your architecture and vice versa.",
@@ -73,6 +74,7 @@ export default async function main(options: Options): Promise<string> {
 
   if (dlPatternHasVersion && options.version) {
     dlPattern.replaceAll("{version}", options.version);
+    console.log("<<<< dlPattern >>>>> ", dlPattern);
   } else if (dlPatternHasVersion && !options.version) {
     throw new Error(
       "When using {version} in the URL pattern you must also speicfy a non empty version string and vice versa.",
@@ -87,6 +89,7 @@ export default async function main(options: Options): Promise<string> {
 
   if (checksumPattern && checksumPatternHasTarget && target) {
     checksumPattern.replaceAll("{target}", target.name);
+    console.log("<<<< checksumPattern >>>>> ", checksumPattern);
   } else if (checksumPatternHasTarget && !target) {
     throw new Error(
       "When using {target} in the checksum URL pattern you must also speicfy a valid target for your architecture and vice versa.",
@@ -95,6 +98,7 @@ export default async function main(options: Options): Promise<string> {
 
   if (checksumPattern && checksumPatternHasVersion && options.version) {
     checksumPattern.replaceAll("{version}", options.version);
+    console.log("<<<< checksumPattern >>>>> ", checksumPattern);
   } else if (checksumPatternHasVersion && !options.version) {
     throw new Error(
       "When using {version} in the checksum URL pattern you must also speicfy a non empty version string and vice versa.",
