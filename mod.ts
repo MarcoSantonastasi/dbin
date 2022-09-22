@@ -115,7 +115,7 @@ export default async function main(options: Options): Promise<string> {
     );
   }
 
-  const checksumUrl = new URL(checksumPattern);
+  //  const checksumUrl = new URL(checksumPattern);
 
   const nameSegments = [options.name];
 
