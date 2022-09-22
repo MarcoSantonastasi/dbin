@@ -25,7 +25,7 @@ jobs:
       - name: Verify formatting and lint
         if: matrix.os == 'ubuntu-latest'
         run: |
-          deno fmt --check
+          deno fmt
           deno lint
 
       - name: Install & run tailwind
