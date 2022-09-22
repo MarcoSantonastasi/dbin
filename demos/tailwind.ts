@@ -11,7 +11,8 @@ const binfile = await dbin({
     { name: "macos-arm64", os: "darwin", arch: "aarch64" },
     { name: "windows-x64.exe", os: "windows", arch: "x86_64" },
   ],
-  dest: "./_bin/tailwind",
+  dir: "./_bin",
+  name: "tailwind",
 });
 
 const process = Deno.run({ cmd: [binfile, "-h"] });

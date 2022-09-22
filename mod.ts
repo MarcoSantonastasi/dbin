@@ -1,36 +1,39 @@
-import {
-  dirname,
-  extname,
-  join,
-  resolve,
-} from "https://deno.land/std@0.139.0/path/mod.ts";
-import { Untar } from "https://deno.land/std@0.139.0/archive/tar.ts";
-import { copy } from "https://deno.land/std@0.139.0/streams/conversion.ts";
+import { dirname, join } from "https://deno.land/std@0.156.0/path/mod.ts";
+import { ensureDir } from "https://deno.land/std@0.156.0/fs/ensure_dir.ts";
 
 type OS = "linux" | "darwin" | "windows";
 type Arch = "x86_64" | "aarch64";
 
 export interface Options {
-  /** Pattern to build the final URL download. It can contains {version} and {target} placeholders. */
+  /** URL pattern to build the final download URL. It can contain a {target} placeholder and a {version} placeholder or be a fully qualified URL to download a specific target. */
   pattern: string;
 
-  /** Checksum pattern */
+  /** Checksum pattern URL used to optionally verify the checksum of the file.*/
   checksumPattern?: string;
 
-  /** Version to download. It's used to replace the {version} placeholder in the pattern. */
-  version: string;
+  /** Version of the GitHub release to download. If given it will be used to replace the {version} placeholder in the pattern. */
+  version?: string;
 
-  /** List of different targets. */
-  targets: Target[];
+  /** List of different possible build targets in the GitHub release. */
+  targets?: Target[];
 
-  /** Path to save the binary file. In Windows environments, the extension ".exe" is appended automatically. */
-  dest: string;
+  /** Directory path to save the binary file to. Must NOT include the file name. */
+  dir: string;
+
+  /** Saved file name. In Windows environments, the extension ".exe" is appended automatically. */
+  name: string;
+
+  /** Wether to add the arch string to the saved file name. */
+  addNameOs?: boolean;
+
+  /** Wether to add the version string to the saved file name. */
+  addNameVers?: boolean;
 
   /** Set true to override the binary file, if it already exists */
   overwrite?: boolean;
 
   /**
-   * The permissions applied to the binary file (ignored by Windows)
+   * The permissions applied to the binary file (ignored by Windows). Defaults to chmod 0o764.
    * @see https://doc.deno.land/deno/stable/~/Deno.chmod
    */
   chmod?: number;
@@ -49,155 +52,139 @@ export interface Target {
 }
 
 export default async function main(options: Options): Promise<string> {
-  const dest = Deno.build.os === "windows"
-    ? resolve(options.dest) + ".exe"
-    : resolve(options.dest);
-  const versions = JSON.parse(localStorage.getItem("dbin:versions") || "{}");
-
-  // Check if the file already exists and return the path
-  try {
-    await Deno.stat(dest);
-    if (!options.overwrite) {
-      // Check if the file has the same version
-      if (versions[dest] === options.version) {
-        console.log(`Using binary file at ${dest}`);
-        return dest;
-      }
-    }
-  } catch {
-    // File does not exist
-  }
-
-  // Detect the target
   const os = options.os ?? Deno.build.os;
   const arch = options.arch ?? Deno.build.arch;
-  const target = options.targets.find((target) =>
-    target.os === os && (!target.arch || target.arch === arch)
+
+  const target = options.targets?.find(
+    (target) => target.os === os && (!target.arch || target.arch === arch)
   );
 
-  if (!target) {
-    throw new Error(`No binary found for your platform (${os}/${arch})`);
+  const dlPattern = options.pattern;
+  const dlPatternHasTarget = dlPattern.includes("{target}");
+  const dlPatternHasVersion = dlPattern.includes("{version}");
+
+  if (dlPatternHasTarget && options.targets?.length != 0) {
+    if (!target)
+      throw new Error(`No target found for your platform (${os} ${arch})`);
+    dlPattern.replaceAll("{target}", target.name);
+  } else {
+    throw new Error(
+      "When using {target} in the URL pattern you must also speicfy a non empty targets array and vice versa."
+    );
   }
 
-  // Generate the download URLs
-  const url = options.pattern
-    .replaceAll("{target}", target.name)
-    .replaceAll("{version}", options.version);
+  if (dlPatternHasVersion && options.version) {
+    dlPattern.replaceAll("{version}", options.version);
+  } else {
+    throw new Error(
+      "When using {version} in the URL pattern you must also speicfy a non empty version string and vice versa."
+    );
+  }
 
-  const checksumUrl = options.checksumPattern?.replaceAll(
-    "{target}",
-    target.name,
-  )?.replaceAll("{version}", options.version);
+  const dlUrl = new URL(dlPattern);
 
-  // Download the file
-  const tmp = await Deno.makeTempDir();
+  const checksumPattern = options.checksumPattern;
+  const checksumPatternHasTarget = checksumPattern?.includes("{target}");
+  const checksumPatternHasVersion = checksumPattern?.includes("{version}");
+
+  if (
+    checksumPattern &&
+    checksumPatternHasTarget &&
+    options.targets &&
+    options.targets.length != 0
+  ) {
+    if (!target)
+      throw new Error(`No target found for your platform (${os} ${arch})`);
+    checksumPattern.replaceAll("{target}", target.name);
+  } else {
+    throw new Error(
+      "When using {target} in the checksum URL pattern you must also speicfy a non empty targets array and vice versa."
+    );
+  }
+
+  if (
+    checksumPattern &&
+    checksumPatternHasVersion &&
+    options.version &&
+    options.version.length != 0
+  ) {
+    checksumPattern.replaceAll("{version}", options.version);
+  } else {
+    throw new Error(
+      "When using {version} in the checksum URL pattern you must also speicfy a non empty version string and vice versa."
+    );
+  }
+
+  const checksumUrl = new URL(checksumPattern);
+
+  const nameSegments = [options.name];
+
+  if (options.addNameOs && options.targets && options.targets.length != 0) {
+    if (!target)
+      throw new Error(`No target found for your platform (${os} ${arch})`);
+    nameSegments.push(target.os);
+  } else {
+    throw new Error(
+      "When adding a target architecture to the saved file name you must also speicfy a non empty targets array."
+    );
+  }
+
+  if (options.addNameVers && options.version && options.version.length != 0) {
+    nameSegments.push(options.version);
+  } else {
+    throw new Error(
+      "When adding a version to the saved file name you must also speicfy a non empty version string."
+    );
+  }
+
+  const saveName = nameSegments.join("-");
+  if (os === "windows" && !saveName.endsWith(".exe")) saveName.concat(".exe");
+  const saveFullPath: string = join(options.dir, saveName);
+
+  let file: Deno.FsFile;
 
   try {
-    const ext = getExtension(url);
+    const fileResponse = await fetch(dlUrl);
+    if (fileResponse.body) {
+      await ensureDir(dirname(saveFullPath));
+      try {
+        file = await Deno.open(saveFullPath, {
+          create: true,
+          write: true,
+          mode: 0o755,
+          createNew: !options.overwrite,
+        });
+      } catch (e) {
+        throw e;
+      }
 
-    // Download the file in the temporary directory
-    await download(new URL(url), join(tmp, `tmp${ext}`), checksumUrl);
+      const pipesMap = {
+        tar: new TransformStream(),
+        gz: new TransformStream(),
+        zip: new TransformStream(),
+      };
 
-    try {
-      await Deno.mkdir(dirname(dest), { recursive: true });
-    } catch {
-      // Destination directory exists
+      const saveExtensions = saveFullPath
+        .split(".")
+        .filter((seg) => seg in pipesMap);
+
+      const pipes = saveExtensions.map(
+        (ext) => pipesMap[ext as never] as TransformStream
+      );
+
+      await pipes
+        .reduce((out, pipe) => out.pipeThrough(pipe), fileResponse.body)
+        .pipeTo(file.writable);
     }
-
-    // Extract the binary
-    if (ext === ".tar.gz") {
-      await extractTarGz(tmp, dest);
-    } else {
-      await Deno.copyFile(join(tmp, `tmp${ext}`), dest);
-    }
-  } finally {
-    // Remove the temporary directory
-    await Deno.remove(tmp, { recursive: true });
+  } catch (e) {
+    throw e;
   }
 
   // Change file permissions
   try {
-    if (options.chmod) {
-      await Deno.chmod(dest, options.chmod);
-    } else {
-      await Deno.chmod(dest, 0o764);
-    }
+    await Deno.chmod(saveFullPath, options.chmod || 0o764);
   } catch {
     // Not supported on Windows
   }
-
-  // Save the version in the local storage
-  versions[dest] = options.version;
-  localStorage.setItem("dbin:versions", JSON.stringify(versions));
-
-  return dest;
-}
-
-async function download(
-  url: URL,
-  dest: string,
-  checksum?: string,
-): Promise<void> {
-  console.log(`Downloading ${url}...`);
-
-  const blob = await (await fetch(url)).blob();
-  const content = new Uint8Array(await blob.arrayBuffer());
-
-  if (checksum) {
-    const sha256sum = await (await fetch(checksum)).text();
-    await checkSha256sum(content, sha256sum);
-  }
-
-  await Deno.writeFile(dest, content);
-}
-
-function getExtension(path: string): string {
-  if (path.endsWith(".tar.gz")) {
-    return ".tar.gz";
-  }
-  return extname(path);
-}
-
-async function extractTarGz(directory: string, dest: string) {
-  // Decompress the gzip file
-  const tgz = await Deno.open(join(directory, "tmp.tar.gz"));
-  const tar = await Deno.create(join(directory, "tmp.tar"));
-
-  await tgz.readable
-    .pipeThrough(new DecompressionStream("gzip"))
-    .pipeTo(tar.writable);
-
-  // Untar the file
-  const reader = await Deno.open(join(directory, "tmp.tar"), { read: true });
-  const untar = new Untar(reader);
-
-  // Copy the first binary file found in the tarball
-  for await (const entry of untar) {
-    if (entry.type === "directory") {
-      continue;
-    }
-
-    const file = await Deno.create(dest);
-    await copy(entry, file);
-    file.close();
-    break;
-  }
-  reader.close();
-}
-
-async function checkSha256sum(
-  content: Uint8Array,
-  sha256sum: string,
-): Promise<void> {
-  const hash = await crypto.subtle.digest("SHA-256", content);
-  const hashArray = Array.from(new Uint8Array(hash));
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join(
-    "",
-  );
-
-  sha256sum = sha256sum.split(/\s+/).shift()!;
-
-  if (hashHex !== sha256sum) {
-    throw new Error("SHA-256 checksum mismatch");
-  }
+  return saveFullPath;
 }
