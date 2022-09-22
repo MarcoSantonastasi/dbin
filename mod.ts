@@ -56,7 +56,7 @@ export default async function main(options: Options): Promise<string> {
   const arch = options.arch ?? Deno.build.arch;
 
   const target = options.targets?.find(
-    (target) => target.os === os && (!target.arch || target.arch === arch),
+    (target) => target.os === os && (!target.arch || target.arch === arch)
   );
 
   const dlPattern = options.pattern;
@@ -65,9 +65,9 @@ export default async function main(options: Options): Promise<string> {
 
   if (dlPatternHasTarget && target) {
     dlPattern.replaceAll("{target}", target.name);
-  } else {
+  } else if (dlPatternHasTarget && !target) {
     throw new Error(
-      "When using {target} in the URL pattern you must also speicfy a valid target for your architecture and vice versa.",
+      "When using {target} in the URL pattern you must also speicfy a valid target for your architecture and vice versa."
     );
   }
 
@@ -75,7 +75,7 @@ export default async function main(options: Options): Promise<string> {
     dlPattern.replaceAll("{version}", options.version);
   } else if (dlPatternHasVersion && !options.version) {
     throw new Error(
-      "When using {version} in the URL pattern you must also speicfy a non empty version string and vice versa.",
+      "When using {version} in the URL pattern you must also speicfy a non empty version string and vice versa."
     );
   }
 
@@ -87,17 +87,17 @@ export default async function main(options: Options): Promise<string> {
 
   if (checksumPattern && checksumPatternHasTarget && target) {
     checksumPattern.replaceAll("{target}", target.name);
-  } else {
+  } else if (checksumPatternHasTarget && !target) {
     throw new Error(
-      "When using {target} in the checksum URL pattern you must also speicfy a valid target for your architecture and vice versa.",
+      "When using {target} in the checksum URL pattern you must also speicfy a valid target for your architecture and vice versa."
     );
   }
 
   if (checksumPattern && checksumPatternHasVersion && options.version) {
     checksumPattern.replaceAll("{version}", options.version);
-  } else {
+  } else if (checksumPatternHasVersion && !options.version) {
     throw new Error(
-      "When using {version} in the checksum URL pattern you must also speicfy a non empty version string and vice versa.",
+      "When using {version} in the checksum URL pattern you must also speicfy a non empty version string and vice versa."
     );
   }
 
@@ -107,17 +107,17 @@ export default async function main(options: Options): Promise<string> {
 
   if (options.addNameOs && target) {
     nameSegments.push(target.os);
-  } else {
+  } else if (options.addNameOs && !target) {
     throw new Error(
-      "When adding a target architecture to the saved file name you must also speicfy valid target for your architecture.",
+      "When adding a target architecture to the saved file name you must also speicfy valid target for your architecture."
     );
   }
 
   if (options.addNameVers && options.version) {
     nameSegments.push(options.version);
-  } else {
+  } else if (options.addNameVers && !options.version) {
     throw new Error(
-      "When adding a version to the saved file name you must also speicfy a non empty version string.",
+      "When adding a version to the saved file name you must also speicfy a non empty version string."
     );
   }
 
@@ -153,7 +153,7 @@ export default async function main(options: Options): Promise<string> {
         .filter((seg) => seg in pipesMap);
 
       const pipes = saveExtensions.map(
-        (ext) => pipesMap[ext as never] as TransformStream,
+        (ext) => pipesMap[ext as never] as TransformStream
       );
 
       await pipes
