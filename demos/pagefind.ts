@@ -9,7 +9,7 @@ const binfile = await dbin({
   targets: [
     { name: "x86_64-unknown-linux-musl", os: "linux", arch: "x86_64" },
     { name: "x86_64-apple-darwin", os: "darwin" },
-    //{ name: "x86_64-pc-windows-msvc", os: "windows", arch: "x86_64" },
+    { name: "x86_64-pc-windows-msvc.exe", os: "windows", arch: "x86_64" },
   ],
   dir: "./_bin",
   name: "pagefind",
