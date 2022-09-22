@@ -25,8 +25,13 @@ jobs:
       - name: Verify formatting and lint
         if: matrix.os == 'ubuntu-latest'
         run: |
-          deno fmt
+          deno fmt --check
           deno lint
+
+      - name: Install & run pagefind
+        run: |
+          deno run -A demos/pagefind.ts
+          deno run -A demos/pagefind.ts
 
       - name: Install & run tailwind
         run: |
